@@ -112,7 +112,7 @@
         <dependency>
             <groupId>com.bucket4j</groupId>
             <artifactId>bucket4j_jdk17-core</artifactId>
-            <version>8.10.1</version>
+            <version>8.16.1</version>
         </dependency>
 
         <!-- Utilitario para variaveis de ambiente em dev -->
