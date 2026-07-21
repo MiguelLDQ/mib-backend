@@ -23,8 +23,4 @@ public class Role extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, unique = true, length = 30)
     private RoleName name;
-
-    public Role(RoleName name) {
-        this.name = name;
-    }
 }
