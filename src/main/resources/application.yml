@@ -1,0 +1,82 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: mib-backend
+
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/mib}
+    username: ${DATABASE_USERNAME:mib_user}
+    password: ${DATABASE_PASSWORD:mib_password}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+
+  jackson:
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+
+  servlet:
+    multipart:
+      max-file-size: 2MB
+      max-request-size: 2MB
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+springdoc:
+  swagger-ui:
+    path: /docs
+  api-docs:
+    path: /api-docs
+
+mib:
+  jwt:
+    secret: ${JWT_SECRET:change-this-secret-in-production-min-256-bits-please-replace-me}
+    access-token-expiration-ms: ${JWT_ACCESS_EXPIRATION:900000}       # 15 minutos
+    refresh-token-expiration-ms: ${JWT_REFRESH_EXPIRATION:604800000} # 7 dias
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173}
+  xp:
+    base-multiplier: 100
+  storage:
+    avatar-dir: ${AVATAR_STORAGE_DIR:uploads/avatars}
+    avatar-public-path: /uploads/avatars
+    max-avatar-size-bytes: 2097152
+  moderation:
+    enabled: ${MODERATION_ENABLED:true}
+  ai:
+    groq:
+      api-key: ${GROQ_API_KEY:}
+      base-url: ${GROQ_BASE_URL:https://api.groq.com/openai/v1/chat/completions}
+      model: ${GROQ_MODEL:llama-3.1-8b-instant}
+      max-tokens: 500
+      temperature: 0.7
+      history-window-size: 10
+      rate-limit-per-hour: 20
+
+logging:
+  level:
+    com.mib.backend: ${LOG_LEVEL:INFO}
+    org.springframework.security: WARN

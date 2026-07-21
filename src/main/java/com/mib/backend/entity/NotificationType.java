@@ -1,0 +1,14 @@
+package com.mib.backend.entity;
+
+public enum NotificationType {
+    NEW_DAILY_MISSIONS,
+    FRIEND_REQUEST_RECEIVED,
+    FRIEND_REQUEST_ACCEPTED,
+    NEW_MESSAGE,
+    MISSION_COMPLETED,
+    SHOP_PURCHASE,
+    ACHIEVEMENT_UNLOCKED,
+    LEVEL_UP,
+    FRIEND_SUGGESTION,
+    OTHER
+}
