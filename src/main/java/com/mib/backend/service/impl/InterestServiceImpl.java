@@ -61,6 +61,15 @@ public class InterestServiceImpl implements InterestService {
 
         userInterestRepository.deleteAllByUserId(currentUserId);
 
+        // IMPORTANTE: o Hibernate reordena as operacoes dentro do flush automatico,
+        // executando todos os INSERTs antes dos DELETEs (mesmo que o DELETE tenha sido
+        // chamado primeiro no codigo). Sem o flush() explicito aqui, reenviar um
+        // interesse que ja estava selecionado tentava inserir (user_id, interest_id)
+        // antes da linha antiga ser de fato removida, violando a unique constraint
+        // "uq_user_interest". O flush() forca o DELETE a ir pro banco agora, antes
+        // dos INSERTs abaixo.
+        userInterestRepository.flush();
+
         List<Interest> interestsToAdd = interestRepository.findAllById(newInterestIds);
         interestsToAdd.forEach(interest -> {
             userInterestRepository.save(new UserInterest(user, interest));
