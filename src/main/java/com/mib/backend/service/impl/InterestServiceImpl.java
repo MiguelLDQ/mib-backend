@@ -39,8 +39,14 @@ public class InterestServiceImpl implements InterestService {
 
         return interestRepository.findAllByOrderByNameAsc().stream()
                 .map(interest -> new InterestResponse(
-                        interest.getId(), interest.getName(), interest.getIconName(),
-                        selected.contains(interest.getId())))
+                        interest.getId(),
+                        interest.getName(),
+                        interest.getIconName(),
+                        selected.contains(interest.getId()),
+                        // Novo: expoe o id da sala tematica vinculada (se houver), para o
+                        // frontend saber quais interesses tem uma ChatRoom do tipo THEME
+                        // associada e poder listar/abrir essas salas em "Chat > Salas tematicas".
+                        interest.getThemeRoom() != null ? interest.getThemeRoom().getId() : null))
                 .toList();
     }
 

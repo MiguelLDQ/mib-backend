@@ -6,6 +6,7 @@ public record InterestResponse(
         UUID id,
         String name,
         String iconName,
-        boolean selectedByMe
+        boolean selectedByMe,
+        UUID themeRoomId
 ) {
 }
