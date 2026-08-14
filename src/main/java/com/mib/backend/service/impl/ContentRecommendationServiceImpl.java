@@ -1,11 +1,12 @@
 package com.mib.backend.service.impl;
 
 import com.mib.backend.ai.ContentRankingAiClient;
-import com.mib.backend.dto.internal.AiRankedItem;
-import com.mib.backend.dto.internal.UserWellnessContext;
+import com.mib.backend.dto.AiRankedItem;
+import com.mib.backend.dto.UserWellnessContext;
 import com.mib.backend.dto.response.ContentRecommendationResponse;
 import com.mib.backend.entity.ContentCategory;
 import com.mib.backend.entity.Mood;
+import com.mib.backend.entity.MissionCategory;
 import com.mib.backend.entity.RecommendedContent;
 import com.mib.backend.entity.User;
 import com.mib.backend.entity.UserContentRecommendation;
@@ -24,12 +25,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -143,34 +145,34 @@ public class ContentRecommendationServiceImpl implements ContentRecommendationSe
     }
 
     private UserWellnessContext buildContext(UUID userId) {
-        LocalDateTime since = LocalDateTime.now().minusDays(LOOKBACK_DAYS);
+        Instant since = Instant.now().minusSeconds(LOOKBACK_DAYS * 24L * 60 * 60);
 
         List<Mood> recentMoods = moodRepository.findByUserIdAndCreatedAtAfterOrderByCreatedAtDesc(userId, since);
         List<String> interests = userInterestRepository.findByUserId(userId).stream()
                 .map(ui -> ui.getInterest().getName())
                 .toList();
-        List<UserMissionCompletion> recentMissions = missionCompletionRepository
-                .findByUserIdAndCreatedAtAfter(userId, since);
+        List<UserMissionCompletion> recentCompletions = missionCompletionRepository
+                .findByUserIdAndCompletedAtAfter(userId, since);
         var breathingLogs = breathingSessionLogRepository.findByUserIdAndCreatedAtAfter(userId, since);
 
         return UserWellnessContext.builder()
                 .dominantMood(computeDominantMood(recentMoods))
                 .moodTrend(computeMoodTrend(recentMoods))
                 .interests(interests)
-                .strugglingCategories(computeStrugglingCategories(recentMissions))
+                .engagedCategories(computeEngagedCategories(recentCompletions))
                 .breathingSessionsLast14Days(breathingLogs.size())
                 .preferredBreathingTechniques(
                         breathingLogs.stream()
                                 .map(log -> log.getBreathingTechnique().getName())
                                 .distinct()
                                 .toList())
-                .currentStreakDays(computeStreak(recentMissions))
+                .currentStreakDays(computeStreak(recentCompletions))
                 .build();
     }
 
     /** Mapeia o contexto calculado para categorias de conteúdo plausíveis, antes de chamar a IA. */
     private Set<ContentCategory> mapContextToCategories(UserWellnessContext context) {
-        Set<ContentCategory> categories = new HashSet<>(context.strugglingCategories());
+        Set<ContentCategory> categories = new HashSet<>(context.engagedCategories());
 
         if ("DECLINING".equals(context.moodTrend()) || "ANSIOSO".equalsIgnoreCase(context.dominantMood())) {
             categories.add(ContentCategory.ANXIETY);
@@ -228,42 +230,47 @@ public class ContentRecommendationServiceImpl implements ContentRecommendationSe
                 .orElse(0.0);
     }
 
-    private Set<ContentCategory> computeStrugglingCategories(List<UserMissionCompletion> completions) {
-        // Regra simples: categorias de missões com baixa taxa de conclusão nos últimos 14 dias.
-        // Ajuste conforme os campos reais de UserMissionCompletion/DailyMission no seu domínio.
-        Map<String, long[]> stats = new HashMap<>(); // categoria -> [completadas, total]
-
+    /**
+     * Sinal POSITIVO de engajamento: como UserMissionCompletion só registra o que
+     * de fato foi completado (não existe "missão não completada" nessa tabela),
+     * não dá pra calcular taxa de conclusão por categoria. Em vez disso, olhamos
+     * quais categorias de missão o usuário mais completou - é um proxy razoável
+     * de interesse/hábito, e reforça recomendações de conteúdo na mesma linha.
+     */
+    private Set<ContentCategory> computeEngagedCategories(List<UserMissionCompletion> completions) {
+        Map<MissionCategory, Long> counts = new HashMap<>();
         for (UserMissionCompletion completion : completions) {
-            String category = completion.getMission().getCategory();
-            stats.putIfAbsent(category, new long[2]);
-            stats.get(category)[1]++;
-            if (completion.isCompleted()) {
-                stats.get(category)[0]++;
-            }
+            MissionCategory category = completion.getDailyMission().getTemplate().getCategory();
+            counts.merge(category, 1L, Long::sum);
         }
 
-        Set<ContentCategory> struggling = new HashSet<>();
-        stats.forEach((category, values) -> {
-            double rate = values[1] == 0 ? 1.0 : (double) values[0] / values[1];
-            if (rate < 0.5) {
-                mapStringToCategory(category).ifPresent(struggling::add);
+        // Pega as categorias com pelo menos 2 conclusões no período, como sinal de hábito
+        // (uma única conclusão isolada não indica engajamento de verdade).
+        Set<ContentCategory> engaged = new HashSet<>();
+        counts.forEach((category, count) -> {
+            if (count >= 2) {
+                mapMissionCategoryToContentCategory(category).ifPresent(engaged::add);
             }
         });
-        return struggling;
+        return engaged;
     }
 
-    private java.util.Optional<ContentCategory> mapStringToCategory(String raw) {
+    /**
+     * Mapeia MissionCategory (domínio de missões) para ContentCategory (domínio de
+     * conteúdo recomendado). Tenta por nome primeiro; ajuste aqui se os enums não
+     * tiverem valores com nomes correspondentes.
+     */
+    private Optional<ContentCategory> mapMissionCategoryToContentCategory(MissionCategory missionCategory) {
         try {
-            return java.util.Optional.of(ContentCategory.valueOf(raw.toUpperCase()));
+            return Optional.of(ContentCategory.valueOf(missionCategory.name()));
         } catch (IllegalArgumentException e) {
-            return java.util.Optional.empty();
+            return Optional.empty();
         }
     }
 
     private int computeStreak(List<UserMissionCompletion> completions) {
         return (int) completions.stream()
-                .filter(UserMissionCompletion::isCompleted)
-                .map(c -> c.getCreatedAt().toLocalDate())
+                .map(c -> c.getCompletedAt().atZone(java.time.ZoneOffset.UTC).toLocalDate())
                 .distinct()
                 .count();
     }

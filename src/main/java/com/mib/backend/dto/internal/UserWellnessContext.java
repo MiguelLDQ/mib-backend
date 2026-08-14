@@ -16,7 +16,7 @@ public record UserWellnessContext(
         String dominantMood,
         String moodTrend, // "IMPROVING", "DECLINING", "STABLE"
         List<String> interests,
-        Set<ContentCategory> strugglingCategories,
+        Set<ContentCategory> engagedCategories, // categorias das missões que o usuário mais completa
         int breathingSessionsLast14Days,
         List<String> preferredBreathingTechniques,
         int currentStreakDays
