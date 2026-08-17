@@ -3,7 +3,7 @@ package com.mib.backend.ai;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mib.backend.ai.GroqClient.GroqChatMessage;
 import com.mib.backend.dto.internal.AiRankedItem;
-import com.mib.backend.dto.internal.UserWellnessContext;
+import com.mib.backend.dto.UserWellnessContext;
 import com.mib.backend.entity.RecommendedContent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

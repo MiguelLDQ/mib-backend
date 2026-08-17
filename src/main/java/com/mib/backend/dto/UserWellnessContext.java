@@ -1,4 +1,4 @@
-package com.mib.backend.dto.internal;
+package com.mib.backend.dto;
 
 import com.mib.backend.entity.ContentCategory;
 import lombok.Builder;
