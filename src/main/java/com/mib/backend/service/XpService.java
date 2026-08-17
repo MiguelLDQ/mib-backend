@@ -18,5 +18,5 @@ public interface XpService {
     LevelCalculator.LevelProgress getProgress(User user);
 
     record XpAwardResult(LevelCalculator.LevelProgress progress, boolean leveledUp, int previousLevel) {
-    }
+    }aaa
 }
