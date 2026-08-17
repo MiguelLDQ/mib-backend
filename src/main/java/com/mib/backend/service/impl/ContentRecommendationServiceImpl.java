@@ -145,15 +145,17 @@ public class ContentRecommendationServiceImpl implements ContentRecommendationSe
     }
 
     private UserWellnessContext buildContext(UUID userId) {
-        Instant since = Instant.now().minusSeconds(LOOKBACK_DAYS * 24L * 60 * 60);
+        Instant instantSince = Instant.now().minusSeconds(LOOKBACK_DAYS * 24L * 60 * 60);
+        LocalDate dateSince = LocalDate.now().minusDays(LOOKBACK_DAYS);
 
-        List<Mood> recentMoods = moodRepository.findByUserIdAndCreatedAtAfterOrderByCreatedAtDesc(userId, since);
+        List<Mood> recentMoods = moodRepository
+                .findByUserIdAndMoodDateAfterOrderByMoodDateDesc(userId, dateSince);
         List<String> interests = userInterestRepository.findByUserId(userId).stream()
                 .map(ui -> ui.getInterest().getName())
                 .toList();
         List<UserMissionCompletion> recentCompletions = missionCompletionRepository
-                .findByUserIdAndCompletedAtAfter(userId, since);
-        var breathingLogs = breathingSessionLogRepository.findByUserIdAndCreatedAtAfter(userId, since);
+                .findByUserIdAndCompletedAtAfter(userId, instantSince);
+        var breathingLogs = breathingSessionLogRepository.findByUserIdAndCreatedAtAfter(userId, instantSince);
 
         return UserWellnessContext.builder()
                 .dominantMood(computeDominantMood(recentMoods))
@@ -163,7 +165,7 @@ public class ContentRecommendationServiceImpl implements ContentRecommendationSe
                 .breathingSessionsLast14Days(breathingLogs.size())
                 .preferredBreathingTechniques(
                         breathingLogs.stream()
-                                .map(log -> log.getBreathingTechnique().getName())
+                                .map(log -> log.getTechnique().getName())
                                 .distinct()
                                 .toList())
                 .currentStreakDays(computeStreak(recentCompletions))

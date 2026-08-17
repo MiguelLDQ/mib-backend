@@ -80,7 +80,7 @@ public class ContentRankingAiClient {
         sb.append("- Humor dominante: ").append(context.dominantMood()).append("\n");
         sb.append("- Tendência de humor: ").append(context.moodTrend()).append("\n");
         sb.append("- Interesses: ").append(String.join(", ", context.interests())).append("\n");
-        sb.append("- Categorias com dificuldade: ").append(context.strugglingCategories()).append("\n");
+        sb.append("- Categorias em que o usuário mais se engaja: ").append(context.engagedCategories()).append("\n");
         sb.append("- Sessões de respiração (14 dias): ").append(context.breathingSessionsLast14Days()).append("\n");
         sb.append("- Técnicas de respiração preferidas: ")
                 .append(String.join(", ", context.preferredBreathingTechniques())).append("\n");

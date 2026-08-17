@@ -12,5 +12,7 @@ public interface MoodRepository extends JpaRepository<Mood, UUID> {
 
     Optional<Mood> findByUserIdAndMoodDate(UUID userId, LocalDate moodDate);
 
+    List<Mood> findByUserIdAndMoodDateAfterOrderByMoodDateDesc(UUID userId, LocalDate since);
+
     List<Mood> findByUserIdAndMoodDateBetweenOrderByMoodDateAsc(UUID userId, LocalDate start, LocalDate end);
 }

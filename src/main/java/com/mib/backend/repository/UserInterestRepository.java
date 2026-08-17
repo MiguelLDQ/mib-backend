@@ -12,6 +12,8 @@ public interface UserInterestRepository extends JpaRepository<UserInterest, UUID
 
     List<UserInterest> findAllByUserId(UUID userId);
 
+    List<UserInterest> findByUserId(UUID userId);
+
     void deleteAllByUserId(UUID userId);
 
     /**

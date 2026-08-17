@@ -13,6 +13,8 @@ public interface BreathingSessionLogRepository extends JpaRepository<BreathingSe
 
     long countByUserId(UUID userId);
 
+    List<BreathingSessionLog> findByUserIdAndCreatedAtAfter(UUID userId, Instant since);
+
     long countByUserIdAndXpAwardedTrueAndCreatedAtAfter(UUID userId, Instant since);
 
     @Query("select coalesce(sum(s.durationSeconds), 0) from BreathingSessionLog s where s.user.id = :userId")
