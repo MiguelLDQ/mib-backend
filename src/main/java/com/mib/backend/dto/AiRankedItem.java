@@ -1,4 +1,4 @@
-package com.mib.backend.dto.internal;
+package com.mib.backend.dto;
 
 import java.util.UUID;
 
